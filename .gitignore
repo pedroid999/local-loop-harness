@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Ralph harness per-run state, evidence, prompts and logs
+.ralph/

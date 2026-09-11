@@ -1,0 +1,57 @@
+[project]
+name = "ralph-harness"
+version = "0.1.0"
+description = "A classic Ralph loop with runner-enforced strict TDD and a pluggable coding CLI."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # YAML front matter in specs. Everything else uses the standard library.
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+ralph = "ralph.cli:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.11",
+    "pytest>=8.3",
+    "ruff>=0.6",
+    "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.0,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "ralph"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["app", ".ralph"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+# ralph.py is a 3-line launcher whose module name would clash with the package.
+files = ["src", "tests"]
+exclude = ["^app/", "^\\.ralph/"]
+
+[[tool.mypy.overrides]]
+# tests/ has no __init__.py, so its modules are top-level names (mypy globs only allow "x.*").
+module = [
+    "conftest", "fake_agent", "test_cli", "test_environment", "test_loop", "test_runners",
+    "test_specs", "test_verify", "test_workspace",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+check_untyped_defs = true
