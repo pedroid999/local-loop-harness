@@ -1,0 +1,76 @@
+# Ralph harness configuration. Every key is optional; these are the defaults unless noted.
+
+[harness]
+workspace = "app"          # target application directory (must not overlap the harness)
+state_dir = ".ralph"       # per-run state, evidence, prompts and logs (git-ignored)
+prompts_dir = "prompts"
+# The workspace may not overlap these harness paths. (Every harness file outside the
+# workspace and state_dir is hash-checked around each invocation; any change stops the run.)
+protected_paths = ["ralph.py", "ralph.toml", "pyproject.toml", "uv.lock", "src",
+                   "prompts", "specs", "tests", "examples"]
+
+[runner]
+default = "opencode"       # "opencode" or "command"
+
+[runner.opencode]
+binary = "opencode"
+agent = "local-qwen"
+model = "llama.cpp/qwen3.5-9b-local"
+extra_args = []            # e.g. ["--pure"] to skip global plugins; --continue/--session/--auto are rejected
+
+# Your local-qwen agent has edit/bash = "ask". `opencode run` AUTO-REJECTS "ask" requests,
+# so the agent could not write files. This override is passed ONLY to the child process
+# via OPENCODE_CONFIG_CONTENT (your ~/.config/opencode is never modified). Remove it to
+# keep your agent's own permissions.
+[runner.opencode.permission]
+edit = "allow"
+external_directory = "deny"
+webfetch = "deny"
+websearch = "deny"
+task = "deny"
+
+[runner.opencode.permission.bash]
+"*" = "deny"
+"uv run *" = "allow"
+"uv add *" = "allow"
+"uv sync*" = "allow"
+"uv lock*" = "allow"
+"ls*" = "allow"
+"cat *" = "allow"
+"grep *" = "allow"
+"find *" = "allow"
+"mkdir *" = "allow"
+"python -m pytest*" = "allow"
+
+[runner.command]
+# Generic adapter. Example: argv = ["my-agent", "--non-interactive", "--prompt-file", "{prompt_file}"]
+argv = []
+prompt_via = "stdin"       # "stdin" or "file" (use the {prompt_file} placeholder)
+
+[verify]
+# `python -m <tool>` makes each tool come from the app's own environment, never from PATH.
+test_command = ["uv", "run", "python", "-m", "pytest"]
+test_dirs = ["tests"]
+quality_commands = [
+  ["uv", "run", "python", "-m", "ruff", "check", "."],
+  ["uv", "run", "python", "-m", "ruff", "format", "--check", "."],
+  ["uv", "run", "python", "-m", "mypy", "."],
+]
+setup_commands = [["uv", "sync"]]
+smoke_command = []         # a spec's smoke_command takes precedence
+red_allowed_paths = ["pyproject.toml", "uv.lock"]
+docs_globs = ["*.md", "*.rst", "*.txt", "docs/**"]
+protected_workspace_paths = ["opencode.json", "opencode.jsonc", ".opencode"]
+test_timeout_s = 900       # per test/quality command, not a run limit
+
+[loop]
+invocation_timeout_s = 1800          # per agent invocation, not a run limit
+max_consecutive_runner_failures = 3  # CLI errors/timeouts in a row => RUNNER_ERROR
+warn_after_stalls = 3                # warn when the same phase fails this many times in a row
+# stop_after_stalls = 10             # opt-in: stop BLOCKED after N stalled iterations
+
+[context]
+max_feedback_chars = 6000
+max_history_entries = 8
+max_listing_entries = 150
+max_prompt_chars = 40000
